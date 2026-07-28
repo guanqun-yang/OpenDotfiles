@@ -1,0 +1,22 @@
+[
+  {
+    "desc": "SEC EDGAR - Summary Prospectus",
+    "url": "https://www.sec.gov/edgar/search/#/q=%2522Summary%2520Prospectus%2522%2520{}&dateRange=1y"
+  },
+  {
+    "desc": "Google Search",
+    "url": "https://www.google.com/search?q={}"
+  },
+  {
+    "desc": "Google Scholar",
+    "url": "https://scholar.google.com/scholar?q={}"
+  },
+  {
+    "desc": "Wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Special:Search/{}"
+  },
+  {
+    "desc": "GitHub",
+    "url": "https://github.com/search?q={}&type=repositories"
+  }
+]

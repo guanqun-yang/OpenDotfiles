@@ -1,0 +1,24 @@
+[
+  {
+    "desc": "Claude Code - Skip permissions (dangerous)",
+    "config": {
+      "permissions": {
+          "allow": [
+            "Read",
+            "Write",
+            "Edit",
+            "Bash(git *)",
+            "Bash(npm *)",
+            "Bash(python *)",
+            "Bash(pip *)"
+          ],
+          "deny": [
+            "Read(./.env)",
+            "Read(./.env.*)",
+            "Bash(rm -rf *)"
+          ],
+          "defaultMode": "acceptEdits"
+        }
+    }
+  }
+]
