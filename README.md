@@ -56,7 +56,7 @@ Most commands need [`fzf`](https://github.com/junegunn/fzf) and [`jq`](https://j
 brew install fzf jq
 ```
 
-Individual commands may want more — `pandoc` and a TeX distribution for `md2pdf`, OBS for `obs-record` — and each one says so when the tool is missing.
+Individual commands may want more — `pandoc` and a TeX distribution for `md2pdf`, `git` for `claude-skills` and `ref` — and each one says so when the tool is missing.
 
 ## Commands
 
@@ -66,24 +66,17 @@ Individual commands may want more — `pandoc` and a TeX distribution for `md2pd
 |---|---|---|
 | `core/base.sh` | `list_cmds` | Fuzzy search custom commands with descriptions in preview |
 | `core/cfg.sh` | `cfg` | Fuzzy search and copy frequently used configs stored in dotfiles/data/configs.json |
+| `core/claude-skills.sh` | `claude-skills` | Fetch Claude Skills from GitHub and install into current project's .claude/skills/ |
 | `core/cp.sh` | `cprecent` | Copy the k most recent files or folders from src to tgt: cprecent <src> <tgt> <k> |
 | `core/git-anon.sh` | `git-anon`, `git-deanon` | Anonymize git user info and optionally rewrite history for anonymous repositories |
-| `core/latex.sh` | `latex`, `latexclean`, `texifier` | Compile LaTeX file to PDF with timestamp prefix: latex [filename] |
-| `core/lidrun.sh` | `lidrun` | Run laptop with lid closed: lidrun {on|off|status|help} |
 | `core/lookup.sh` | `lookup` | Open a search term in a URL template: lookup {add|delete|list|help|<term>} |
 | `core/prompt.sh` | `prompt` | Manage prompt snippets: prompt {add|edit|delete|list|help} or fuzzy search |
 | `core/pytab.sh` | `pytab` | Convert Python indentation between spaces and tabs |
 | `core/ref.sh` | `ref` | Manage and sync reference material repos: ref [sync|add|edit|delete|list|help] |
-| `core/sshto.sh` | `sshto` | Fuzzy search and connect to SSH locations stored in dotfiles/data/ssh.json |
-| `core/theme.sh` | `theme` | Switch terminal color themes: theme [set <name>|list|help] |
 | `core/touch.sh` | `mtime` | Set file last-modified time (now, absolute, or relative offset) Usage: mtime <file> [now | 2024-01-15 | 2024-01-15T14:30:00 | -2d3h30m15s] |
 | `core/zip.sh` | `zipdate` | Zips the current folder with a timestamped filename |
-| `macos/datespan.sh` | `datespan` | `[macos]` Compute aggregate days between multiple date pairs Usage: datespan |
-| `macos/ems.sh` | `ems` | `[macos]` Manage experience files: ems {add|list|delete|help} or fuzzy search |
 | `macos/finder.sh` | `fav`, `unfav`, `lsfav` | `[macos]` Add a path to Finder sidebar Favorites |
 | `macos/md2pdf.sh` | `md2pdf` | `[macos]` Convert Markdown to PDF via Pandoc + XeLaTeX with minted code blocks Usage: md2pdf <input.md> [output.pdf] |
-| `macos/obs-record.sh` | `obs-record` | `[macos]` Record a specific app with OBS (audio + video isolation) Usage: obs-record  — interactive window picker via fzf |
-| `macos/ssdlink.sh` | `ssdlink`, `ssdls` | `[macos]` Create /Volumes/SSD/<name> and symlink it into $HOME |
 
 <!-- COMMANDS:END -->
 
@@ -97,9 +90,18 @@ Individual commands may want more — `pandoc` and a TeX distribution for `md2pd
 | `lookups.json` | `lookup` | Google, Scholar, Wikipedia, GitHub, SEC EDGAR templates |
 | `prompts.json` | `prompt` | Empty |
 | `refs.json` | `ref` | Empty |
-| `ssh.json` | `sshto` | Empty |
 
-The empty ones are seeds — the private originals hold personal hosts and prompts. Run the matching command's `add` subcommand to fill them in.
+The empty ones are seeds — the private originals hold personal prompts and repositories. Run the matching command's `add` subcommand to fill them in.
+
+## Claude Code skills
+
+`claude-skills` installs the skills and `CLAUDE.md` templates from [OpenClaudeSkills](https://github.com/guanqun-yang/OpenClaudeSkills) into the current project's `.claude/` directory. It clones to `~/.cache/OpenClaudeSkills` and re-syncs on every run.
+
+```bash
+claude-skills -l              # list available skills and CLAUDE.md modes
+claude-skills -m coding       # install everything with the coding CLAUDE.md
+claude-skills -f              # re-sync, overwriting what is already there
+```
 
 ## Notes
 
