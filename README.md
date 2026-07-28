@@ -74,7 +74,7 @@ Individual commands may want more — `pandoc` and a TeX distribution for `md2pd
 | `core/prompt.sh` | `prompt` | Manage prompt snippets: prompt {add|edit|delete|list|help} or fuzzy search |
 | `core/pytab.sh` | `pytab` | Convert Python indentation between spaces and tabs |
 | `core/ref.sh` | `ref` | Manage and sync reference material repos: ref [sync|add|edit|delete|list|help] |
-| `core/sshto.sh` | `sshto` | ── Main ────────────────────────────────────────────────────────── Fuzzy search and connect to SSH locations stored in dotfiles/data/ssh.json |
+| `core/sshto.sh` | `sshto` | Fuzzy search and connect to SSH locations stored in dotfiles/data/ssh.json |
 | `core/theme.sh` | `theme` | Switch terminal color themes: theme [set <name>|list|help] |
 | `core/touch.sh` | `mtime` | Set file last-modified time (now, absolute, or relative offset) Usage: mtime <file> [now | 2024-01-15 | 2024-01-15T14:30:00 | -2d3h30m15s] |
 | `core/zip.sh` | `zipdate` | Zips the current folder with a timestamped filename |
