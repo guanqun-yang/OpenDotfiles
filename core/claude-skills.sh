@@ -80,6 +80,7 @@ claude-skills() {
         for mode_dir in "$cache_dir"/claudemd/*/; do
             [ -d "$mode_dir" ] || continue
             local name=$(basename "$mode_dir")
+            [ "$name" = "global" ] && continue
             local headline=$(head -1 "$mode_dir/CLAUDE.md" 2>/dev/null | sed 's/^# *//')
             printf "  %-25s %s\n" "$name" "$headline"
         done
@@ -177,10 +178,14 @@ claude-skills() {
     # --- CLAUDE.md selection ---
     if [ -d "$cache_dir/claudemd" ]; then
         # Collect available modes
+        # claudemd/global holds rules shared by every mode. It is appended to
+        # whichever mode is installed, never offered as a mode of its own.
         local modes=()
         for mode_dir in "$cache_dir"/claudemd/*/; do
             [ -d "$mode_dir" ] || continue
-            modes+=($(basename "$mode_dir"))
+            local mode_name=$(basename "$mode_dir")
+            [ "$mode_name" = "global" ] && continue
+            modes+=("$mode_name")
         done
 
         if [ ${#modes[@]} -eq 0 ]; then
@@ -231,12 +236,21 @@ claude-skills() {
         # Validate and install. An explicit pick (via -m or fzf) is treated as
         # consent to overwrite, so the user does not need -f in addition.
         local mode_src="$cache_dir/claudemd/$selected/CLAUDE.md"
+        local global_src="$cache_dir/claudemd/global/CLAUDE.md"
         if [ -f "$mode_src" ]; then
             if [ -f "CLAUDE.md" ] && ! $force && ! $explicit_pick; then
                 echo "CLAUDE.md already exists (use -f to overwrite, -m to switch mode)."
             else
+                # Mode file first, so the mode auto-detection above keeps
+                # matching on the first line when re-syncing with -f.
                 cp "$mode_src" "CLAUDE.md"
-                echo "  Installed CLAUDE.md (mode: $selected)"
+                if [ -f "$global_src" ]; then
+                    printf '\n' >> "CLAUDE.md"
+                    cat "$global_src" >> "CLAUDE.md"
+                    echo "  Installed CLAUDE.md (mode: $selected + global)"
+                else
+                    echo "  Installed CLAUDE.md (mode: $selected)"
+                fi
             fi
         else
             echo "Warning: mode '$selected' not found. Available: ${modes[*]}"
