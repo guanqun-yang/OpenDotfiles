@@ -76,6 +76,7 @@ Individual commands may want more — `pandoc` and a TeX distribution for `md2pd
 | `core/touch.sh` | `mtime` | Set file last-modified time (now, absolute, or relative offset) Usage: mtime <file> [now | 2024-01-15 | 2024-01-15T14:30:00 | -2d3h30m15s] |
 | `core/zip.sh` | `zipdate` | Zips the current folder with a timestamped filename |
 | `macos/finder.sh` | `fav`, `unfav`, `lsfav` | `[macos]` Add a path to Finder sidebar Favorites |
+| `macos/lidrun.sh` | `lidrun` | `[macos]` Run laptop with lid closed: lidrun {on|off|status|help} |
 | `macos/md2pdf.sh` | `md2pdf` | `[macos]` Convert Markdown to PDF via Pandoc + XeLaTeX with minted code blocks Usage: md2pdf <input.md> [output.pdf] |
 
 <!-- COMMANDS:END -->
