@@ -17,11 +17,11 @@ claude-skills() {
             -h|--help)
                 echo "Usage: claude-skills [options] [skill1 skill2 ...]"
                 echo ""
-                echo "Fetch Claude Skills from GitHub into .claude/skills/ of the current project."
-                echo "Also installs a CLAUDE.md based on use case (default: coding)."
+                echo "Fetch Claude Skills from GitHub into .claude/skills/ of the current project,"
+                echo "plus slash commands into .claude/commands/ and a CLAUDE.md based on use case (default: coding)."
                 echo ""
                 echo "Options:"
-                echo "  -l, --list        List available skills and CLAUDE.md modes"
+                echo "  -l, --list        List available skills, commands, and CLAUDE.md modes"
                 echo "  -f, --force       Overwrite existing skills and CLAUDE.md"
                 echo "  -m, --mode MODE   Set CLAUDE.md mode (skip fzf selector)"
                 echo "  -h, --help        Show this help"
@@ -74,6 +74,14 @@ claude-skills() {
                 desc=$(awk '/^description:/{sub(/^description: */, ""); print; exit}' "$skill_dir/SKILL.md")
             fi
             printf "  %-25s %s\n" "$name" "$desc"
+        done
+        echo ""
+        echo "Available commands:"
+        for cmd_file in "$cache_dir"/commands/*.md; do
+            [ -f "$cmd_file" ] || continue
+            local name=$(basename "$cmd_file" .md)
+            local desc=$(awk '/^description:/{sub(/^description: */, ""); print; exit}' "$cmd_file")
+            printf "  /%-24s %s\n" "$name" "$desc"
         done
         echo ""
         echo "Available CLAUDE.md modes:"
@@ -138,8 +146,8 @@ claude-skills() {
         echo "  Warning: settings.json not found at $settings_src"
     fi
 
-    # Install .claude/commands/ (slash commands) from the repo
-    local commands_src="$cache_dir/.claude/commands"
+    # Install slash commands from the repo's commands/ into .claude/commands/
+    local commands_src="$cache_dir/commands"
     if [ -d "$commands_src" ]; then
         mkdir -p ".claude/commands"
         for cmd_file in "$commands_src"/*.md; do
