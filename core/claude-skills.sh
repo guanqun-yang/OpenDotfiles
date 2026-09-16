@@ -21,10 +21,11 @@ claude-skills() {
                 echo ""
                 echo "Fetch Claude Skills from GitHub into .claude/skills/ of the current project,"
                 echo "plus slash commands into .claude/commands/ and a CLAUDE.md based on use case (default: coding)."
+                echo "Also installs the user-level ~/.claude/CLAUDE.md and removes any stray ~/CLAUDE.md."
                 echo ""
                 echo "Options:"
                 echo "  -l, --list        List available skills, commands, and CLAUDE.md modes"
-                echo "  -f, --force       Overwrite existing skills and CLAUDE.md"
+                echo "  -f, --force       Overwrite existing skills and both CLAUDE.md files"
                 echo "  -m, --mode MODE   Set CLAUDE.md mode (skip fzf selector)"
                 echo "  -h, --help        Show this help"
                 echo ""
@@ -185,11 +186,32 @@ claude-skills() {
 
     echo "Done. $installed skill(s) installed to $target_dir/"
 
-    # --- CLAUDE.md selection ---
+    # --- User-level CLAUDE.md ---
+    # Claude Code reads every CLAUDE.md from the working directory up to /, so a
+    # file in $HOME silently loads into every project. Remove it; the user layer
+    # lives in ~/.claude/CLAUDE.md, which is loaded everywhere by design.
+    if [ -f "$HOME/CLAUDE.md" ]; then
+        rm -f "$HOME/CLAUDE.md"
+        echo "Removed ~/CLAUDE.md (it loaded into every project under \$HOME)."
+    fi
+
+    # claudemd/global is the user layer. Overwrite only a file we installed
+    # (recognized by its header line) or when forced; leave a hand-written one alone.
+    local global_src="$cache_dir/claudemd/global/CLAUDE.md"
+    local user_md="$HOME/.claude/CLAUDE.md"
+    if [ -f "$global_src" ]; then
+        if [ ! -f "$user_md" ] || $force || [ "$(head -1 "$user_md")" = "$(head -1 "$global_src")" ]; then
+            mkdir -p "$HOME/.claude"
+            cp "$global_src" "$user_md"
+            echo "Installed ~/.claude/CLAUDE.md (user layer)"
+        else
+            echo "~/.claude/CLAUDE.md exists and was not installed by claude-skills (use -f to overwrite)."
+        fi
+    fi
+
+    # --- Project CLAUDE.md selection ---
     if [ -d "$cache_dir/claudemd" ]; then
-        # Collect available modes
-        # claudemd/global holds rules shared by every mode. It is appended to
-        # whichever mode is installed, never offered as a mode of its own.
+        # Collect available modes; global is the user layer, never a mode.
         local modes=()
         for mode_dir in "$cache_dir"/claudemd/*/; do
             [ -d "$mode_dir" ] || continue
@@ -246,21 +268,12 @@ claude-skills() {
         # Validate and install. An explicit pick (via -m or fzf) is treated as
         # consent to overwrite, so the user does not need -f in addition.
         local mode_src="$cache_dir/claudemd/$selected/CLAUDE.md"
-        local global_src="$cache_dir/claudemd/global/CLAUDE.md"
         if [ -f "$mode_src" ]; then
             if [ -f "CLAUDE.md" ] && ! $force && ! $explicit_pick; then
                 echo "CLAUDE.md already exists (use -f to overwrite, -m to switch mode)."
             else
-                # Mode file first, so the mode auto-detection above keeps
-                # matching on the first line when re-syncing with -f.
                 cp "$mode_src" "CLAUDE.md"
-                if [ -f "$global_src" ]; then
-                    printf '\n' >> "CLAUDE.md"
-                    cat "$global_src" >> "CLAUDE.md"
-                    echo "  Installed CLAUDE.md (mode: $selected + global)"
-                else
-                    echo "  Installed CLAUDE.md (mode: $selected)"
-                fi
+                echo "  Installed CLAUDE.md (mode: $selected)"
             fi
         else
             echo "Warning: mode '$selected' not found. Available: ${modes[*]}"
