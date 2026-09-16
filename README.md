@@ -96,7 +96,7 @@ The empty ones are seeds — the private originals hold personal prompts and rep
 
 ## Claude Code skills
 
-`claude-skills` installs the skills and `CLAUDE.md` templates from [OpenClaudeSkills](https://github.com/guanqun-yang/OpenClaudeSkills) into the current project's `.claude/` directory. It clones to `~/.cache/OpenClaudeSkills` and re-syncs on every run.
+`claude-skills` installs the skills, slash commands, and `CLAUDE.md` templates from [OpenClaudeSkills](https://github.com/guanqun-yang/OpenClaudeSkills) into the current project's `.claude/` directory. It clones to `~/.cache/OpenClaudeSkills` and re-syncs on every run.
 
 ```bash
 claude-skills -l              # list available skills and CLAUDE.md modes
