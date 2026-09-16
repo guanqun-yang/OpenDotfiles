@@ -9,6 +9,8 @@ claude-skills() {
     local list_only=false
     local mode=""
     local skills=()
+    # zsh aborts the function when a glob matches nothing; let empty dirs fall through.
+    [ -n "$ZSH_VERSION" ] && setopt local_options null_glob
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -f|--force) force=true; shift ;;
