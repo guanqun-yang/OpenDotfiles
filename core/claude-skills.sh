@@ -1,3 +1,24 @@
+# Install the user-level CLAUDE.md, and remove the stray $HOME one that would
+# otherwise load into every project underneath it. Called once per invocation.
+_claude_skills_user_md() {
+    local cache_dir="$1" force="$2"
+    if [ -f "$HOME/CLAUDE.md" ]; then
+        rm -f "$HOME/CLAUDE.md"
+        echo "Removed ~/CLAUDE.md (it loaded into every project under \$HOME)."
+    fi
+
+    local global_src="$cache_dir/claudemd/global/CLAUDE.md"
+    local user_md="$HOME/.claude/CLAUDE.md"
+    [ -f "$global_src" ] || return 0
+    if [ ! -f "$user_md" ] || [ "$force" = true ] || [ "$(head -1 "$user_md")" = "$(head -1 "$global_src")" ]; then
+        mkdir -p "$HOME/.claude"
+        cp "$global_src" "$user_md"
+        echo "Installed ~/.claude/CLAUDE.md (user layer)"
+    else
+        echo "~/.claude/CLAUDE.md exists and was not installed by claude-skills (use -f to overwrite)."
+    fi
+}
+
 # Fetch Claude Skills from GitHub and install into current project's .claude/skills/
 claude-skills() {
     local repo="https://github.com/guanqun-yang/OpenClaudeSkills.git"
@@ -7,6 +28,8 @@ claude-skills() {
     # Parse flags
     local force=false
     local list_only=false
+    local all=false
+    local dry_run=false
     local mode=""
     local skills=()
     # zsh aborts the function when a glob matches nothing; let empty dirs fall through.
@@ -15,6 +38,8 @@ claude-skills() {
         case "$1" in
             -f|--force) force=true; shift ;;
             -l|--list)  list_only=true; shift ;;
+            -a|--all)   all=true; force=true; shift ;;
+            --dry-run)  dry_run=true; shift ;;
             -m|--mode)  mode="$2"; shift 2 ;;
             -h|--help)
                 echo "Usage: claude-skills [options] [skill1 skill2 ...]"
@@ -26,6 +51,11 @@ claude-skills() {
                 echo "Options:"
                 echo "  -l, --list        List available skills, commands, and CLAUDE.md modes"
                 echo "  -f, --force       Overwrite existing skills and both CLAUDE.md files"
+                echo "  -a, --all         Re-install into every project under \$HOME that has"
+                echo "                    .claude/skills already. Implies -f. Re-syncs a project's"
+                echo "                    CLAUDE.md only when its first line matches a preset, so a"
+                echo "                    hand-written one is left alone and no mode picker opens."
+                echo "      --dry-run     With --all, list what would change and write nothing"
                 echo "  -m, --mode MODE   Set CLAUDE.md mode (skip fzf selector)"
                 echo "  -h, --help        Show this help"
                 echo ""
@@ -35,6 +65,8 @@ claude-skills() {
                 echo "  claude-skills -m blog system-branding  # specific mode + skill"
                 echo "  claude-skills -l             # list available skills and modes"
                 echo "  claude-skills -f             # force update everything"
+                echo "  claude-skills --all --dry-run  # show which projects would be updated"
+                echo "  claude-skills --all          # update every installed project"
                 return 0
                 ;;
             *) skills+=("$1"); shift ;;
@@ -42,7 +74,11 @@ claude-skills() {
     done
 
     # Always sync with the GitHub remote. Clone if missing, fast-forward pull if present.
-    if [ ! -d "$cache_dir/.git" ]; then
+    # CS_CHILD is set by --all on each per-project run: the parent already synced,
+    # and 40 fetches of the same repository is 40 chances to fail half way through.
+    if [ -n "$CS_CHILD" ]; then
+        :
+    elif [ ! -d "$cache_dir/.git" ]; then
         echo "Cloning skills repository to $cache_dir..."
         mkdir -p "$(dirname "$cache_dir")"
         git clone --quiet "$repo" "$cache_dir" || {
@@ -64,6 +100,74 @@ claude-skills() {
     if [ ! -d "$cache_dir/skills" ]; then
         echo "Error: No skills/ directory found in repository."
         return 1
+    fi
+
+    # --- Update every installed project ---
+    if $all; then
+        # Declared once: in zsh, `local x` for a name that already exists prints it.
+        local modes=() projects=() p p_mode head1 m updated=0 kept=0
+        for mode_dir in "$cache_dir"/claudemd/*/; do
+            [ -d "$mode_dir" ] || continue
+            m=$(basename "$mode_dir")
+            [ "$m" = "global" ] || modes+=("$m")
+        done
+
+        # A project is a directory with .claude/skills already in it. $HOME itself
+        # is excluded: ~/.claude/skills is the user-level store, not an install.
+        for p in $(find "$HOME" -maxdepth 3 -type d -path '*/.claude/skills' 2>/dev/null | sed 's|/.claude/skills$||' | sort); do
+            [ "$p" = "$HOME" ] || projects+=("$p")
+        done
+
+        if [ ${#projects[@]} -eq 0 ]; then
+            echo "No projects with .claude/skills found under $HOME."
+            return 0
+        fi
+
+        $dry_run || _claude_skills_user_md "$cache_dir" true
+
+        for p in "${projects[@]}"; do
+            # Match the project's CLAUDE.md to a preset by its first line. No match
+            # means it was hand-written, and overwriting it is the one thing this
+            # loop must never do, so its CLAUDE.md is left exactly as it is.
+            p_mode=""
+            if [ -f "$p/CLAUDE.md" ]; then
+                head1=$(head -1 "$p/CLAUDE.md")
+                for m in "${modes[@]}"; do
+                    if [ "$head1" = "$(head -1 "$cache_dir/claudemd/$m/CLAUDE.md")" ]; then
+                        p_mode="$m"
+                        break
+                    fi
+                done
+            fi
+
+            if $dry_run; then
+                if [ -n "$p_mode" ]; then
+                    printf "  %-44s skills + CLAUDE.md (%s)\n" "${p/#$HOME\//~/}" "$p_mode"
+                elif [ -f "$p/CLAUDE.md" ]; then
+                    printf "  %-44s skills only (CLAUDE.md hand-written)\n" "${p/#$HOME\//~/}"
+                else
+                    printf "  %-44s skills only (no CLAUDE.md)\n" "${p/#$HOME\//~/}"
+                fi
+                continue
+            fi
+
+            echo ""
+            echo "==> ${p/#$HOME\//~/}"
+            if [ -n "$p_mode" ]; then
+                ( cd "$p" && CS_CHILD=1 claude-skills -f -m "$p_mode" ) && updated=$((updated + 1))
+            else
+                ( cd "$p" && CS_CHILD=1 CS_KEEP_CLAUDEMD=1 claude-skills -f ) && kept=$((kept + 1))
+            fi
+        done
+
+        if $dry_run; then
+            echo ""
+            echo "${#projects[@]} project(s) would be updated. Run without --dry-run to apply."
+        else
+            echo ""
+            echo "Done. $updated project(s) updated with their CLAUDE.md, $kept with skills only."
+        fi
+        return 0
     fi
 
     # List mode
@@ -188,29 +292,21 @@ claude-skills() {
 
     # --- User-level CLAUDE.md ---
     # Claude Code reads every CLAUDE.md from the working directory up to /, so a
-    # file in $HOME silently loads into every project. Remove it; the user layer
-    # lives in ~/.claude/CLAUDE.md, which is loaded everywhere by design.
-    if [ -f "$HOME/CLAUDE.md" ]; then
-        rm -f "$HOME/CLAUDE.md"
-        echo "Removed ~/CLAUDE.md (it loaded into every project under \$HOME)."
-    fi
-
-    # claudemd/global is the user layer. Overwrite only a file we installed
-    # (recognized by its header line) or when forced; leave a hand-written one alone.
-    local global_src="$cache_dir/claudemd/global/CLAUDE.md"
-    local user_md="$HOME/.claude/CLAUDE.md"
-    if [ -f "$global_src" ]; then
-        if [ ! -f "$user_md" ] || $force || [ "$(head -1 "$user_md")" = "$(head -1 "$global_src")" ]; then
-            mkdir -p "$HOME/.claude"
-            cp "$global_src" "$user_md"
-            echo "Installed ~/.claude/CLAUDE.md (user layer)"
-        else
-            echo "~/.claude/CLAUDE.md exists and was not installed by claude-skills (use -f to overwrite)."
-        fi
-    fi
+    # file in $HOME silently loads into every project. The user layer belongs in
+    # ~/.claude/CLAUDE.md, which is loaded everywhere by design. Under --all the
+    # parent has already done this once.
+    [ -n "$CS_CHILD" ] || _claude_skills_user_md "$cache_dir" "$force"
 
     # --- Project CLAUDE.md selection ---
-    if [ -d "$cache_dir/claudemd" ]; then
+    # CS_KEEP_CLAUDEMD is set by --all for a project whose CLAUDE.md matches no
+    # preset: it was written by hand, so the skills update but the file does not.
+    if [ -n "$CS_KEEP_CLAUDEMD" ]; then
+        if [ -f "CLAUDE.md" ]; then
+            echo "  Kept CLAUDE.md (hand-written, matches no preset)"
+        else
+            echo "  No CLAUDE.md here, and --all does not create one"
+        fi
+    elif [ -d "$cache_dir/claudemd" ]; then
         # Collect available modes; global is the user layer, never a mode.
         local modes=()
         for mode_dir in "$cache_dir"/claudemd/*/; do
