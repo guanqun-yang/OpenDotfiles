@@ -64,6 +64,7 @@ Individual commands may want more — `pandoc` and a TeX distribution for `md2pd
 
 | Script | Commands | Description |
 |---|---|---|
+| `core/arxiv-dl.sh` | `arxiv-dl` | Download arXiv papers into the current directory, named like 2405.07314v2.pdf: arxiv-dl ID-or-FILE ... |
 | `core/base.sh` | `list_cmds` | Fuzzy search custom commands with descriptions in preview |
 | `core/cfg.sh` | `cfg` | Fuzzy search and copy frequently used configs stored in dotfiles/data/configs.json |
 | `core/claude-skills.sh` | `claude-skills` | Fetch Claude Skills from GitHub and install into current project's .claude/skills/ |
