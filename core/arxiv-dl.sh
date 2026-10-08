@@ -1,11 +1,31 @@
+_arxiv_dl_help() {
+    echo "Usage: arxiv-dl <id|file> [<id|file> ...]"
+    echo ""
+    echo "Download arXiv papers into the current directory as <id><version>.pdf."
+    echo ""
+    echo "Input:"
+    echo "  IDs       2405.07314, 2405.07314v2, hep-th/9711200, arXiv:..., or arxiv.org URLs"
+    echo "  Files     a file argument is read and every ID in it is downloaded"
+    echo "  Any separator works (spaces, commas, semicolons, newlines...); duplicates are skipped."
+    echo ""
+    echo "Naming:"
+    echo "  An ID without a version gets the latest version: 1706.03762 becomes 1706.03762v7.pdf"
+    echo "  Old-style IDs replace '/' with '_': hep-th/9711200 becomes hep-th_9711200v3.pdf"
+    echo ""
+    echo "Examples:"
+    echo "  arxiv-dl 1706.03762"
+    echo "  arxiv-dl \"1706.03762v1, 1810.04805; hep-th/9711200\""
+    echo "  arxiv-dl reading-list.txt"
+    echo ""
+    echo "Requires curl. Exits non-zero if any paper fails to download."
+}
+
 # Download arXiv papers into the current directory, named like 2405.07314v2.pdf: arxiv-dl ID-or-FILE ...
 arxiv-dl() {
-    if [ $# -eq 0 ]; then
-        echo "Usage: arxiv-dl <id|file> [<id|file> ...]"
-        echo "  IDs may be separated by anything (spaces, commas, newlines, URLs...)."
-        echo "  A file argument is scanned for IDs. Without a version, the latest is fetched."
-        return 1
-    fi
+    case "$1" in
+        -h|--help|help) _arxiv_dl_help; return 0 ;;
+        "")             _arxiv_dl_help; return 1 ;;
+    esac
 
     local text="" arg
     for arg in "$@"; do
